@@ -1,0 +1,238 @@
+/* ─── BundleForge: Dashboard Styles ─── */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Metric Card ─── */
+.metric-card {
+  background: var(--p-color-bg-surface);
+  border: 1px solid var(--p-color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.metric-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.metric-card__label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--p-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.metric-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--p-color-text);
+  line-height: 1.2;
+}
+
+.metric-card__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+}
+
+.metric-card__trend--up {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.metric-card__trend--down {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.metric-card__trend--neutral {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+/* ─── Chart Container ─── */
+.chart-container {
+  background: var(--p-color-bg-surface);
+  border: 1px solid var(--p-color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+/* ─── Top Bundles Table ─── */
+.top-bundles {
+  background: var(--p-color-bg-surface);
+  border: 1px solid var(--p-color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.top-bundles__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.top-bundles__table th {
+  text-align: left;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--p-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--p-color-border);
+}
+
+.top-bundles__table td {
+  padding: 0.75rem 0.5rem;
+  font-size: 0.875rem;
+  color: var(--p-color-text);
+  border-bottom: 1px solid var(--p-color-border-subdued);
+}
+
+.top-bundles__table tr:last-child td {
+  border-bottom: none;
+}
+
+.top-bundles__table tr:hover td {
+  background: var(--p-color-bg-surface-hover);
+}
+
+.top-bundles__name {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+
+.top-bundles__name:hover {
+  color: #6366f1;
+}
+
+/* ─── Status Badge ─── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge--active {
+  color: #059669;
+  background: #ecfdf5;
+}
+
+.status-badge--draft {
+  color: #6366f1;
+  background: #eef2ff;
+}
+
+.status-badge--paused {
+  color: #d97706;
+  background: #fffbeb;
+}
+
+.status-badge--archived {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+/* ─── Empty State ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.empty-state__icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--p-color-text);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state__description {
+  font-size: 0.875rem;
+  color: var(--p-color-text-secondary);
+  max-width: 400px;
+  margin-bottom: 1.5rem;
+}
+
+/* ─── Quick Actions ─── */
+.quick-action-card {
+  background: var(--p-color-bg-surface);
+  border: 1px solid var(--p-color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.quick-action-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+  transform: translateY(-1px);
+}
+
+.quick-action-card__icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.quick-action-card__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--p-color-text);
+  margin-bottom: 0.25rem;
+}
+
+.quick-action-card__description {
+  font-size: 0.75rem;
+  color: var(--p-color-text-secondary);
+}
+
+/* ─── Type Badge ─── */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}

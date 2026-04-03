@@ -1,342 +1,328 @@
-import { useEffect } from "react";
-import type {
-  ActionFunctionArgs,
-  HeadersFunction,
-  LoaderFunctionArgs,
-} from "react-router";
-import { useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import type { LoaderFunctionArgs, HeadersFunction } from "react-router";
+import { useLoaderData, Link } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import db from "../db.server";
+import { getDashboardMetrics } from "../lib/analytics/aggregator.server";
+import { formatCurrency, formatCompact, formatPercentage } from "../lib/utils/formatting";
+import { BUNDLE_TYPE_ICONS } from "../lib/utils/constants";
+import styles from "../styles/dashboard.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
+  const url = new URL(request.url);
+  const dateRange = url.searchParams.get("range") || "last_30";
 
-  return null;
+  // Ensure shop record exists
+  let shop = await db.shop.findUnique({
+    where: { shopDomain: session.shop },
+  });
+
+  if (!shop) {
+    shop = await db.shop.create({
+      data: { shopDomain: session.shop },
+    });
+  }
+
+  const metrics = await getDashboardMetrics(shop.id, dateRange);
+
+  return { metrics, shopDomain: session.shop, dateRange };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
-  const color = ["Red", "Orange", "Yellow", "Green"][
-    Math.floor(Math.random() * 4)
-  ];
-  const response = await admin.graphql(
-    `#graphql
-      mutation populateProduct($product: ProductCreateInput!) {
-        productCreate(product: $product) {
-          product {
-            id
-            title
-            handle
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  barcode
-                  createdAt
-                }
-              }
-            }
-            demoInfo: metafield(namespace: "$app", key: "demo_info") {
-              jsonValue
-            }
-          }
-        }
-      }`,
-    {
-      variables: {
-        product: {
-          title: `${color} Snowboard`,
-          metafields: [
-            {
-              namespace: "$app",
-              key: "demo_info",
-              value: "Created by React Router Template",
-            },
-          ],
-        },
-      },
-    },
-  );
-  const responseJson = await response.json();
-
-  const product = responseJson.data!.productCreate!.product!;
-  const variantId = product.variants.edges[0]!.node!.id!;
-
-  const variantResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
-        }
-      }
-    }`,
-    {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
-      },
-    },
-  );
-
-  const variantResponseJson = await variantResponse.json();
-
-  const metaobjectResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyReactRouterTemplateUpsertMetaobject($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
-      metaobjectUpsert(handle: $handle, metaobject: $metaobject) {
-        metaobject {
-          id
-          handle
-          title: field(key: "title") {
-            jsonValue
-          }
-          description: field(key: "description") {
-            jsonValue
-          }
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }`,
-    {
-      variables: {
-        handle: {
-          type: "$app:example",
-          handle: "demo-entry",
-        },
-        metaobject: {
-          fields: [
-            { key: "title", value: "Demo Entry" },
-            {
-              key: "description",
-              value:
-                "This metaobject was created by the Shopify app template to demonstrate the metaobject API.",
-            },
-          ],
-        },
-      },
-    },
-  );
-
-  const metaobjectResponseJson = await metaobjectResponse.json();
-
-  return {
-    product: responseJson!.data!.productCreate!.product,
-    variant:
-      variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants,
-    metaobject:
-      metaobjectResponseJson!.data!.metaobjectUpsert!.metaobject,
-  };
-};
-
-export default function Index() {
-  const fetcher = useFetcher<typeof action>();
-
-  const shopify = useAppBridge();
-  const isLoading =
-    ["loading", "submitting"].includes(fetcher.state) &&
-    fetcher.formMethod === "POST";
-
-  useEffect(() => {
-    if (fetcher.data?.product?.id) {
-      shopify.toast.show("Product created");
-    }
-  }, [fetcher.data?.product?.id, shopify]);
-
-  const generateProduct = () => fetcher.submit({}, { method: "POST" });
+export default function Dashboard() {
+  const { metrics, dateRange } = useLoaderData<typeof loader>();
 
   return (
-    <s-page heading="Shopify app template">
-      <s-button slot="primary-action" onClick={generateProduct}>
-        Generate a product
+    <s-page heading="Dashboard">
+      <s-button slot="primary-action" href="/app/bundles/new">
+        Create Bundle
       </s-button>
 
-      <s-section heading="Congrats on creating a new Shopify app 🎉">
-        <s-paragraph>
-          This embedded app template uses{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/tools/app-bridge"
-            target="_blank"
-          >
-            App Bridge
-          </s-link>{" "}
-          interface examples like an{" "}
-          <s-link href="/app/additional">additional page in the app nav</s-link>
-          , as well as an{" "}
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql"
-            target="_blank"
-          >
-            Admin GraphQL
-          </s-link>{" "}
-          mutation demo, to provide a starting point for app development.
-        </s-paragraph>
-      </s-section>
-      <s-section heading="Get started with products">
-        <s-paragraph>
-          Generate a product with GraphQL and get the JSON output for that
-          product. Learn more about the{" "}
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-            target="_blank"
-          >
-            productCreate
-          </s-link>{" "}
-          mutation in our API references. Includes a product{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data/metafields"
-            target="_blank"
-          >
-            metafield
-          </s-link>{" "}
-          and{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data/metaobjects"
-            target="_blank"
-          >
-            metaobject
-          </s-link>
-          .
-        </s-paragraph>
+      {/* Date Range Selector */}
+      <s-section>
         <s-stack direction="inline" gap="base">
-          <s-button
-            onClick={generateProduct}
-            {...(isLoading ? { loading: true } : {})}
-          >
-            Generate a product
-          </s-button>
-          {fetcher.data?.product && (
+          {[
+            { value: "today", label: "Today" },
+            { value: "last_7", label: "7 days" },
+            { value: "last_30", label: "30 days" },
+            { value: "last_90", label: "90 days" },
+          ].map((range) => (
             <s-button
-              onClick={() => {
-                shopify.intents.invoke?.("edit:shopify/Product", {
-                  value: fetcher.data?.product?.id,
-                });
-              }}
-              target="_blank"
-              variant="tertiary"
+              key={range.value}
+              variant={dateRange === range.value ? "primary" : "tertiary"}
+              href={`/app?range=${range.value}`}
             >
-              Edit product
+              {range.label}
             </s-button>
-          )}
+          ))}
         </s-stack>
-        {fetcher.data?.product && (
-          <s-section heading="productCreate mutation">
-            <s-stack direction="block" gap="base">
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre style={{ margin: 0 }}>
-                  <code>{JSON.stringify(fetcher.data.product, null, 2)}</code>
-                </pre>
-              </s-box>
+      </s-section>
 
-              <s-heading>productVariantsBulkUpdate mutation</s-heading>
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre style={{ margin: 0 }}>
-                  <code>{JSON.stringify(fetcher.data.variant, null, 2)}</code>
-                </pre>
-              </s-box>
+      {/* Metric Cards */}
+      <s-section>
+        <div className={styles["dashboard-grid"]}>
+          <MetricCard
+            label="Bundle Revenue"
+            value={formatCurrency(metrics.totalRevenue)}
+            trend={null}
+          />
+          <MetricCard
+            label="Conversion Rate"
+            value={formatPercentage(metrics.conversionRate, false)}
+            trend={null}
+          />
+          <MetricCard
+            label="Total Impressions"
+            value={formatCompact(metrics.totalImpressions)}
+            trend={null}
+          />
+          <MetricCard
+            label="Active Bundles"
+            value={String(metrics.activeBundles)}
+            trend={null}
+          />
+        </div>
+      </s-section>
 
-              <s-heading>metaobjectUpsert mutation</s-heading>
-              <s-box
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                <pre style={{ margin: 0 }}>
-                  <code>
-                    {JSON.stringify(fetcher.data.metaobject, null, 2)}
-                  </code>
-                </pre>
-              </s-box>
-            </s-stack>
-          </s-section>
+      {/* Revenue Chart */}
+      <s-section heading="Revenue Over Time">
+        <div className={styles["chart-container"]}>
+          {metrics.revenueByDay.length > 0 ? (
+            <RevenueChart data={metrics.revenueByDay} />
+          ) : (
+            <div className={styles["empty-state"]}>
+              <div className={styles["empty-state__icon"]}>📊</div>
+              <div className={styles["empty-state__title"]}>No data yet</div>
+              <div className={styles["empty-state__description"]}>
+                Revenue data will appear here once your bundles start generating conversions.
+              </div>
+            </div>
+          )}
+        </div>
+      </s-section>
+
+      {/* Top Performing Bundles */}
+      <s-section heading="Top Performing Bundles">
+        {metrics.topBundles.length > 0 ? (
+          <div className={styles["top-bundles"]}>
+            <table className={styles["top-bundles__table"]}>
+              <thead>
+                <tr>
+                  <th>Bundle</th>
+                  <th>Type</th>
+                  <th>Impressions</th>
+                  <th>Conversions</th>
+                  <th>Revenue</th>
+                  <th>Conv. Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.topBundles.map((bundle) => (
+                  <tr key={bundle.id}>
+                    <td>
+                      <Link to={`/app/bundles/${bundle.id}`} className={styles["top-bundles__name"]}>
+                        {bundle.name}
+                      </Link>
+                    </td>
+                    <td>
+                      <span className={styles["type-badge"]}>
+                        {BUNDLE_TYPE_ICONS[bundle.type] || "📦"}{" "}
+                      </span>
+                    </td>
+                    <td>{formatCompact(bundle.impressions)}</td>
+                    <td>{formatCompact(bundle.conversions)}</td>
+                    <td>{formatCurrency(bundle.revenue)}</td>
+                    <td>{formatPercentage(bundle.conversionRate, false)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={styles["empty-state"]}>
+            <div className={styles["empty-state__icon"]}>📦</div>
+            <div className={styles["empty-state__title"]}>No bundles yet</div>
+            <div className={styles["empty-state__description"]}>
+              Create your first product bundle to start tracking performance.
+            </div>
+            <s-button href="/app/bundles/new">Create Your First Bundle</s-button>
+          </div>
         )}
       </s-section>
 
-      <s-section slot="aside" heading="App template specs">
-        <s-paragraph>
-          <s-text>Framework: </s-text>
-          <s-link href="https://reactrouter.com/" target="_blank">
-            React Router
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Interface: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/app-home/using-polaris-components"
-            target="_blank"
-          >
-            Polaris web components
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>API: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql"
-            target="_blank"
-          >
-            GraphQL
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Custom data: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/apps/build/custom-data"
-            target="_blank"
-          >
-            Metafields &amp; metaobjects
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Database: </s-text>
-          <s-link href="https://www.prisma.io/" target="_blank">
-            Prisma
-          </s-link>
-        </s-paragraph>
+      {/* Quick Actions */}
+      <s-section slot="aside" heading="Quick Actions">
+        <div style={{ display: "grid", gap: "0.75rem" }}>
+          <Link to="/app/bundles/new" className={styles["quick-action-card"]}>
+            <div className={styles["quick-action-card__icon"]}>📦</div>
+            <div className={styles["quick-action-card__title"]}>Create Bundle</div>
+            <div className={styles["quick-action-card__description"]}>
+              Build a new product bundle with discounts
+            </div>
+          </Link>
+          <Link to="/app/volume-rules" className={styles["quick-action-card"]}>
+            <div className={styles["quick-action-card__icon"]}>📈</div>
+            <div className={styles["quick-action-card__title"]}>Volume Discounts</div>
+            <div className={styles["quick-action-card__description"]}>
+              Set up tiered pricing for bulk purchases
+            </div>
+          </Link>
+          <Link to="/app/analytics" className={styles["quick-action-card"]}>
+            <div className={styles["quick-action-card__icon"]}>📊</div>
+            <div className={styles["quick-action-card__title"]}>View Analytics</div>
+            <div className={styles["quick-action-card__description"]}>
+              Dive deep into your bundle performance data
+            </div>
+          </Link>
+        </div>
       </s-section>
 
-      <s-section slot="aside" heading="Next steps">
+      <s-section slot="aside" heading="Getting Started">
         <s-unordered-list>
           <s-list-item>
-            Build an{" "}
-            <s-link
-              href="https://shopify.dev/docs/apps/getting-started/build-app-example"
-              target="_blank"
-            >
-              example app
-            </s-link>
+            <s-link href="/app/bundles/new">Create your first bundle</s-link>
           </s-list-item>
           <s-list-item>
-            Explore Shopify&apos;s API with{" "}
-            <s-link
-              href="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-              target="_blank"
-            >
-              GraphiQL
-            </s-link>
+            <s-link href="/app/volume-rules">Set up volume discounts</s-link>
+          </s-list-item>
+          <s-list-item>
+            <s-link href="/app/settings">Configure your preferences</s-link>
           </s-list-item>
         </s-unordered-list>
       </s-section>
     </s-page>
+  );
+}
+
+// ─── Metric Card Component ───
+
+function MetricCard({
+  label,
+  value,
+  trend,
+}: {
+  label: string;
+  value: string;
+  trend: { value: number; direction: "up" | "down" | "neutral" } | null;
+}) {
+  return (
+    <div className={styles["metric-card"]}>
+      <div className={styles["metric-card__label"]}>{label}</div>
+      <div className={styles["metric-card__value"]}>{value}</div>
+      {trend && (
+        <div
+          className={`${styles["metric-card__trend"]} ${
+            styles[`metric-card__trend--${trend.direction}`]
+          }`}
+        >
+          {trend.direction === "up" ? "↑" : trend.direction === "down" ? "↓" : "–"}{" "}
+          {formatPercentage(Math.abs(trend.value), false)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Revenue Chart Component (SVG-based) ───
+
+function RevenueChart({ data }: { data: Array<{ date: string; revenue: number; conversions: number }> }) {
+  if (data.length === 0) return null;
+
+  const maxRevenue = Math.max(...data.map((d) => d.revenue), 1);
+  const width = 800;
+  const height = 200;
+  const padding = { top: 20, right: 20, bottom: 30, left: 60 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  const points = data.map((d, i) => ({
+    x: padding.left + (i / Math.max(data.length - 1, 1)) * chartWidth,
+    y: padding.top + chartHeight - (d.revenue / maxRevenue) * chartHeight,
+    revenue: d.revenue,
+    date: d.date,
+  }));
+
+  const linePath = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+    .join(" ");
+
+  const areaPath = `${linePath} L ${points[points.length - 1].x} ${
+    padding.top + chartHeight
+  } L ${padding.left} ${padding.top + chartHeight} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
+      <defs>
+        <linearGradient id="bundleAreaGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+
+      {/* Grid lines */}
+      {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+        const y = padding.top + chartHeight - frac * chartHeight;
+        return (
+          <g key={frac}>
+            <line
+              x1={padding.left}
+              y1={y}
+              x2={width - padding.right}
+              y2={y}
+              stroke="#e2e8f0"
+              strokeDasharray="4 4"
+            />
+            <text
+              x={padding.left - 8}
+              y={y + 4}
+              textAnchor="end"
+              fontSize="10"
+              fill="#94a3b8"
+            >
+              ${Math.round(maxRevenue * frac)}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Area */}
+      <path d={areaPath} fill="url(#bundleAreaGradient)" />
+
+      {/* Line */}
+      <path d={linePath} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Data points */}
+      {points.map((p, i) => (
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r="3"
+          fill="#6366f1"
+          stroke="white"
+          strokeWidth="1.5"
+        />
+      ))}
+
+      {/* X-axis labels */}
+      {points
+        .filter((_, i) => i % Math.max(Math.floor(points.length / 6), 1) === 0)
+        .map((p, i) => (
+          <text
+            key={i}
+            x={p.x}
+            y={height - 5}
+            textAnchor="middle"
+            fontSize="10"
+            fill="#94a3b8"
+          >
+            {new Date(p.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
+          </text>
+        ))}
+    </svg>
   );
 }
 

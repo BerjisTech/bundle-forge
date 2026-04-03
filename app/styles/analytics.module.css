@@ -1,0 +1,120 @@
+/* ─── BundleForge: Analytics Styles ─── */
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Chart Section ─── */
+.chart-section {
+  background: var(--p-color-bg-surface);
+  border: 1px solid var(--p-color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.chart-section__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--p-color-text);
+}
+
+/* ─── Breakdown Table ─── */
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--p-color-bg-surface);
+  border: 1px solid var(--p-color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.breakdown-table th {
+  text-align: left;
+  padding: 0.75rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--p-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--p-color-border);
+  background: var(--p-color-bg-surface-secondary);
+}
+
+.breakdown-table td {
+  padding: 0.75rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--p-color-text);
+  border-bottom: 1px solid var(--p-color-border-subdued);
+}
+
+.breakdown-table tr:last-child td {
+  border-bottom: none;
+}
+
+.breakdown-table tr:hover td {
+  background: var(--p-color-bg-surface-hover);
+}
+
+.breakdown-table__name {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+
+.breakdown-table__name:hover {
+  color: #6366f1;
+}
+
+/* ─── Revenue Bar (mini inline bar chart) ─── */
+.revenue-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.revenue-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--p-color-bg-surface-secondary);
+  overflow: hidden;
+}
+
+.revenue-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #6366f1, #0d9488);
+  transition: width 0.3s ease;
+}
+
+.revenue-bar__value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--p-color-text);
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: right;
+}

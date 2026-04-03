@@ -1,34 +1,189 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// BundleForge — Smart Bundles & Volume Discount App
+// Prisma Schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
   url      = "file:dev.sqlite"
 }
 
+// ─── Shopify Session (required by @shopify/shopify-app-session-storage-prisma) ───
+
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+// ─── BundleForge: Shop Settings ───
+
+model Shop {
+  id             String   @id @default(cuid())
+  shopDomain     String   @unique
+  currency       String   @default("USD")
+  brandColor     String   @default("#6366F1") // Indigo
+  accentColor    String   @default("#0D9488") // Teal
+  defaultDiscount Float   @default(10)
+  defaultHeadline String  @default("Complete the look")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  bundles        Bundle[]
+  volumeRules    VolumeRule[]
+  analytics      AnalyticsEvent[]
+}
+
+// ─── BundleForge: Bundles ───
+
+model Bundle {
+  id       String @id @default(cuid())
+  shopId   String
+  shop     Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name     String
+  type     String // "fixed" | "dynamic" | "bogo"
+  status   String @default("draft") // "draft" | "active" | "paused" | "archived"
+  priority Int    @default(0)
+
+  // Discount configuration
+  discountType  String? // "percentage" | "fixed" | "free_shipping"
+  discountValue Float?
+
+  // BOGO configuration (buy X get Y)
+  bogoTriggerQty   Int? // Buy this many
+  bogoRewardQty    Int? // Get this many
+  bogoRewardType   String? // "free" | "discounted"
+  bogoRewardValue  Float? // Discount on reward items
+
+  // Targeting rules (JSON-serialized)
+  targetProducts  String? // JSON: product/collection GIDs that trigger this bundle
+  targetTags      String? // JSON: customer tags
+  targetMinOrder  Float?  // Minimum order value
+  targetMaxOrder  Float?  // Maximum order value
+
+  // Display configuration
+  headline    String  @default("Complete the look")
+  description String?
+  imageUrl    String?
+
+  // Denormalized metrics (updated from AnalyticsEvent)
+  impressions Int   @default(0)
+  clicks      Int   @default(0)
+  conversions Int   @default(0)
+  revenue     Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  BundleProduct[]
+  analytics AnalyticsEvent[]
+
+  @@index([shopId, status])
+  @@index([shopId, type])
+}
+
+// ─── BundleForge: Bundle Products (join table) ───
+
+model BundleProduct {
+  id        String @id @default(cuid())
+  bundleId  String
+  bundle    Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+
+  productId String // Shopify product GID
+  variantId String? // Optional: specific variant GID
+  title     String // Cached product title
+  imageUrl  String? // Cached product image
+  price     Float   @default(0) // Cached price
+
+  quantity  Int    @default(1)
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([bundleId])
+  @@unique([bundleId, productId])
+}
+
+// ─── BundleForge: Volume Discount Rules ───
+
+model VolumeRule {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name   String
+  status String @default("draft") // "draft" | "active" | "paused" | "archived"
+
+  // Targeting (JSON-serialized)
+  targetProducts    String? // JSON: specific product GIDs, null = all products
+  targetCollections String? // JSON: collection GIDs
+
+  // Denormalized metrics
+  impressions Int   @default(0)
+  conversions Int   @default(0)
+  revenue     Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tiers     VolumeTier[]
+  analytics AnalyticsEvent[]
+
+  @@index([shopId, status])
+}
+
+// ─── BundleForge: Volume Tiers ───
+
+model VolumeTier {
+  id           String     @id @default(cuid())
+  volumeRuleId String
+  volumeRule   VolumeRule @relation(fields: [volumeRuleId], references: [id], onDelete: Cascade)
+
+  minQuantity   Int    // e.g., 3
+  maxQuantity   Int?   // e.g., 5 (null = unlimited)
+  discountType  String // "percentage" | "fixed"
+  discountValue Float  // e.g., 10 (meaning 10% or $10)
+  label         String? // e.g., "Most Popular"
+
+  sortOrder Int @default(0)
+
+  @@index([volumeRuleId])
+}
+
+// ─── BundleForge: Analytics Events ───
+
+model AnalyticsEvent {
+  id           String      @id @default(cuid())
+  shopId       String
+  shop         Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  bundleId     String?
+  bundle       Bundle?     @relation(fields: [bundleId], references: [id], onDelete: SetNull)
+  volumeRuleId String?
+  volumeRule   VolumeRule? @relation(fields: [volumeRuleId], references: [id], onDelete: SetNull)
+
+  eventType String  // "impression" | "click" | "conversion" | "dismiss"
+  orderId   String? // Shopify order GID
+  revenue   Float?  // Revenue attributed to this event
+  metadata  String? // JSON: extra event data
+
+  createdAt DateTime @default(now())
+
+  @@index([shopId, eventType, createdAt])
+  @@index([bundleId, eventType])
+  @@index([volumeRuleId, eventType])
 }

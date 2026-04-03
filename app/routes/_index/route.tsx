@@ -15,40 +15,43 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { showForm: Boolean(login) };
 };
 
-export default function App() {
+export default function LandingPage() {
   const { showForm } = useLoaderData<typeof loader>();
 
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <div className={styles.badge}>Smart Bundles</div>
+        <h1 className={styles.heading}>
+          BundleForge
+        </h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Boost your Average Order Value with smart product bundles and volume
+          discounts. Create the perfect bundle for every customer.
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
             <label className={styles.label}>
               <span>Shop domain</span>
-              <input className={styles.input} type="text" name="shop" />
-              <span>e.g: my-shop-domain.myshopify.com</span>
+              <input className={styles.input} type="text" name="shop" placeholder="your-store.myshopify.com" />
             </label>
             <button className={styles.button} type="submit">
-              Log in
+              Get Started
             </button>
           </Form>
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>📦 Smart Bundles</strong>. Create fixed, dynamic, and BOGO
+            bundles with flexible discount rules.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>📈 Volume Discounts</strong>. Tiered pricing that encourages
+            customers to buy more and save more.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>📊 Deep Analytics</strong>. Track impressions, conversions,
+            and revenue for every bundle and rule.
           </li>
         </ul>
       </div>

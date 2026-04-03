@@ -1,42 +1,29 @@
-You are a senior Shopify app developer in 2026 specializing in embedded React Router apps.
+You are a senior Shopify app developer in 2026.
 
-I have created an app called **AfterPulse** using `npm init @shopify/app@latest` with the React Router (TypeScript) template.
-The app is now running cleanly on port 6300 with a stable tunnel URL.
+Build **BundleForge** — a smart bundles and volume discount app using the React Router TypeScript template.
 
-App Goal:
-AfterPulse is an AI-powered post-purchase and checkout upsell app. It helps merchants increase Average Order Value by showing smart, dynamic upsells and bundles on the thank-you page and order status page.
+App Purpose:
+Helps merchants increase average order value by creating attractive product bundles, volume discounts, "buy X get Y" offers, and tiered pricing rules.
 
-Technical Stack:
-- React Router v7 + TypeScript (keep the official structure)
-- Polaris 12+ for UI (modern, clean, professional look)
-- App Bridge v4 for proper embedded experience
-- GraphQL Admin API + REST where needed
-- Prisma + SQLite for dev (later switch to Postgres for production if needed)
-- OpenAI or Claude API for AI features (make the API key configurable in settings)
+Core MVP Features:
+1. Dashboard with bundle performance metrics (revenue from bundles, conversion lift, top performing bundles)
+2. Bundle Builder — easy interface to create product bundles (fixed bundles or dynamic)
+3. Volume Discount Rules — tiered pricing (e.g. buy 3+ get 10% off)
+4. Targeting rules (specific products, collections, customer tags, order value)
+5. Preview mode so merchants can see how bundles appear on product/collection pages
+6. Analytics per bundle
 
-MVP Features (in priority order):
-1. Dashboard – Overview with metrics (revenue from upsells, AOV lift, conversion rate, top performing offers)
-2. Offers Manager – Create/edit/delete upsell offers (single product upsell, bundle, discount)
-3. AI Rules Engine – Merchants define rules + AI suggests personalized offers based on order content
-4. Placement Settings – Control where offers appear (thank-you page, order status, optional checkout)
-5. Targeting – By products, collections, order value, customer tags, country
-6. Analytics – Basic performance tracking per offer
-7. Settings – API keys, general toggles, branding/styling options
-
-Requirements:
-- Fully embedded admin UI with clean navigation (sidebar or top nav)
-- Modern, premium Polaris design with good spacing and dark/light mode support
-- Excellent mobile responsiveness
-- Proper error handling, loading states, and toast notifications
-- Scalable folder structure (routes, components, lib, hooks, etc.) because I plan to build 3 more similar apps (BundleForge, GlobalForge, ReturnForge)
+Technical Requirements:
+- Polaris 12+ for clean UI
+- Proper embedded App Bridge
+- Use Product, Variant, and Collection GraphQL APIs
+- Support both fixed bundles and rule-based dynamic bundles
+- Scalable folder structure (I plan to build 4 similar apps)
 
 Task:
-1. First, analyze the current project structure and suggest improvements for a clean, maintainable codebase.
-2. Give a clear development roadmap with prioritized tasks for the MVP.
-3. Start by implementing the main layout + navigation + Dashboard page (with placeholder metrics).
-4. Provide full code + explanations for each step.
-5. Follow latest Shopify best practices for 2026.
+1. Analyze current project structure and suggest improvements for multiple apps.
+2. Provide a clear MVP development roadmap.
+3. Start by building the main layout + navigation + Dashboard page with placeholder metrics.
+4. Give full code with explanations for each step.
 
-Think like an experienced indie Shopify developer who ships fast but builds clean, production-ready code.
-
-Begin now.
+Follow latest Shopify best practices. Begin now.

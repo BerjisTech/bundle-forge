@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction } from "react-router";
 import { useNavigate, useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
@@ -144,10 +144,12 @@ export default function NewBundlePage() {
   const isSubmitting = fetcher.state !== "idle";
 
   // Handle success
-  if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
-    shopify.toast.show("Bundle created successfully!");
-    navigate("/app/bundles");
-  }
+  useEffect(() => {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
+      shopify.toast.show("Bundle created successfully!");
+      navigate("/app/bundles");
+    }
+  }, [fetcher.data, shopify, navigate]);
 
   const pickProducts = useCallback(async () => {
     try {

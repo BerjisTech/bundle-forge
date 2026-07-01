@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction } from "react-router";
 import { useNavigate, useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
@@ -84,10 +84,12 @@ export default function NewVolumeRulePage() {
 
   const isSubmitting = fetcher.state !== "idle";
 
-  if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
-    shopify.toast.show("Volume rule created!");
-    navigate("/app/volume-rules");
-  }
+  useEffect(() => {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
+      shopify.toast.show("Volume rule created!");
+      navigate("/app/volume-rules");
+    }
+  }, [fetcher.data, shopify, navigate]);
 
   const addTier = () => {
     const lastTier = tiers[tiers.length - 1];
